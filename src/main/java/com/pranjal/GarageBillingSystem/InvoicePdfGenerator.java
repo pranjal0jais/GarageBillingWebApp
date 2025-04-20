@@ -22,7 +22,6 @@ public class InvoicePdfGenerator {
         Font labelFont = new Font(Font.HELVETICA, 12, Font.BOLD);
         Font normalFont = new Font(Font.HELVETICA, 12, Font.NORMAL);
 
-        // Title
         Paragraph title = new Paragraph("CHETAN AUTOMOBILE", titleFont);
         title.setAlignment(Element.ALIGN_CENTER);
         document.add(title);
@@ -32,7 +31,6 @@ public class InvoicePdfGenerator {
         address.setSpacingAfter(10);
         document.add(address);
 
-        // Customer and Invoice Info
         PdfPTable infoTable = new PdfPTable(2);
         infoTable.setWidthPercentage(100);
         infoTable.setWidths(new float[]{1, 2});
@@ -47,7 +45,6 @@ public class InvoicePdfGenerator {
 
         document.add(infoTable);
 
-        // Bill Table
         PdfPTable table = new PdfPTable(4);
         table.setWidthPercentage(100);
         table.setWidths(new float[]{1, 5, 2, 2});
@@ -66,7 +63,6 @@ public class InvoicePdfGenerator {
             table.addCell(getCell("₹" + item.getPrice(), normalFont));
         }
 
-        // Empty rows if needed
         int emptyRows = 10 - items.size();
         for (int i = 0; i < emptyRows; i++) {
             table.addCell(getCell(" ", normalFont));
@@ -77,7 +73,6 @@ public class InvoicePdfGenerator {
 
         document.add(table);
 
-        // Total
         Paragraph total = new Paragraph("Total Amount: ₹" + invoice.getTotalCost(), labelFont);
         total.setAlignment(Element.ALIGN_RIGHT);
         total.setSpacingBefore(10);
