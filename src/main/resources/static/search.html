@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Search Invoices</title>
+    <style>
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 20px;
+          background: #f9f9f9;
+        }
+
+        .container {
+          max-width: 800px;
+          margin: auto;
+          background: #fff;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+          text-align: center;
+        }
+
+        input {
+          padding: 10px;
+          width: calc(50% - 12px);
+          margin: 6px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+        }
+
+        button {
+          padding: 10px 16px;
+          margin: 6px;
+          border: none;
+          border-radius: 4px;
+          background: #3498db;
+          color: white;
+          cursor: pointer;
+        }
+
+        button:hover {
+          background: #2980b9;
+        }
+
+        .invoice {
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          padding: 16px;
+          margin-top: 20px;
+          background: #fefefe;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+        }
+
+        th,
+        td {
+          border: 1px solid #aaa;
+          padding: 8px;
+          text-align: left;
+        }
+
+        .delete-btn {
+          background: #e74c3c;
+          color: white;
+          border: none;
+          padding: 6px 12px;
+          border-radius: 4px;
+          cursor: pointer;
+          margin-top: 10px;
+        }
+
+        .delete-btn:hover {
+          background: #c0392b;
+        }
+
+        @media (max-width: 600px) {
+          input {
+            width: 100%;
+          }
+
+          button {
+            width: 100%;
+          }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>Search Invoices</h2>
+
+    <input type="text" id="searchName" placeholder="Customer Name">
+    <input type="text" id="searchPhone" placeholder="Phone Number">
+
+    <div style="margin-top: 10px;">
+        <button onclick="search()">Search</button>
+        <button onclick="getAll()">Get All</button>
+        <button onclick="window.location.href='index.html'">Back to Create</button>
+    </div>
+
+    <div id="result"></div>
+</div>
+
+<script>
+    function formatDate(iso) {
+      return new Date(iso).toISOString().split("T")[0];
+    }
+
+    function renderInvoices(invoices) {
+      const container = document.getElementById("result");
+      container.innerHTML = "";
+
+      if (!invoices.length) {
+        container.innerHTML = "<p>No invoices found.</p>";
+        return;
+      }
+
+      invoices.forEach(inv => {
+        const div = document.createElement("div");
+        div.className = "invoice";
+        div.innerHTML = `
+          <h4>Invoice #${inv.id}</h4>
+          <p><strong>Name:</strong> ${inv.customerName}</p>
+          <p><strong>Phone:</strong> ${inv.customerPhoneNumber}</p>
+          <p><strong>Car:</strong> ${inv.carPlate}</p>
+          <p><strong>Date:</strong> ${formatDate(inv.billDate)}</p>
+          <p><strong>Total:</strong> ₹${inv.totalCost}</p>
+          <table>
+            <thead><tr><th>Description</th><th>Qty</th><th>Price</th></tr></thead>
+            <tbody>
+              ${inv.billItems.map(b => `<tr><td>${b.description}</td><td>${b.quantity}</td><td>₹${b.price}</td></tr>`).join('')}
+            </tbody>
+          </table>
+          <button class="delete-btn" onclick="deleteInvoice(${inv.id})">Delete</button>
+          <button onclick="downloadPDF(${inv.id})">Download PDF</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function search() {
+      const name = document.getElementById("searchName").value;
+      const phone = document.getElementById("searchPhone").value;
+      let url = "http://localhost:8080/api/bill?";
+
+      if (name) url += `name=${encodeURIComponent(name)}&`;
+      if (phone) url += `phoneNumber=${encodeURIComponent(phone)}`;
+
+      fetch(url)
+        .then(res => res.json())
+        .then(data => renderInvoices(data))
+        .catch(err => alert("Error fetching invoices"));
+    }
+
+    function getAll() {
+      fetch("http://localhost:8080/api/bill")
+        .then(res => res.json())
+        .then(data => renderInvoices(data))
+        .catch(err => alert("Error fetching all invoices"));
+    }
+
+    function deleteInvoice(id) {
+      if (confirm("Are you sure you want to delete invoice #" + id + "?")) {
+        fetch(`http://localhost:8080/api/bill/delete/${id}`, {
+          method: "DELETE"
+        })
+          .then(res => {
+            if (res.ok) {
+              alert("Deleted successfully");
+              getAll();
+            } else {
+              alert("Delete failed");
+            }
+          });
+      }
+    }
+
+    function downloadPDF(id) {
+      fetch(`http://localhost:8080/api/bill/download/${id}`)
+        .then(response => response.blob())
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `invoice_${id}.pdf`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        })
+        .catch(err => alert("Failed to download PDF"));
+    }
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Invoice</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 20px;
+          background: #f9f9f9;
+        }
+
+        form {
+          max-width: 600px;
+          margin: auto;
+          background: #fff;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        label {
+          display: block;
+          margin-top: 12px;
+        }
+
+        input {
+          width: 100%;
+          padding: 10px;
+          margin-top: 4px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+        }
+
+        .item {
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          padding: 12px;
+          margin-top: 12px;
+          position: relative;
+          background: #fefefe;
+        }
+
+        .remove-btn {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          background: #e74c3c;
+          color: white;
+          border: none;
+          padding: 5px 8px;
+          border-radius: 50%;
+          cursor: pointer;
+        }
+
+        button {
+          margin-top: 15px;
+          padding: 10px 16px;
+          border: none;
+          border-radius: 4px;
+          background: #3498db;
+          color: white;
+          cursor: pointer;
+        }
+
+        button:hover {
+          background: #2980b9;
+        }
+
+        button[type="button"]:last-of-type {
+          background: #2ecc71;
+          margin-left: 10px;
+        }
+
+        @media (max-width: 600px) {
+          body {
+            padding: 10px;
+          }
+
+          form {
+            padding: 15px;
+          }
+
+          .item {
+            padding: 10px;
+          }
+
+          button {
+            width: 100%;
+            margin-bottom: 10px;
+          }
+        }
+    </style>
+</head>
+<body>
+
+<h2 style="text-align: center;">Create Invoice</h2>
+
+<form id="invoiceForm">
+    <label>Customer Name:
+        <input type="text" id="customerName" required>
+    </label>
+
+    <label>Phone Number:
+        <input type="text" id="customerPhoneNumber" required>
+    </label>
+
+    <label>Car Plate:
+        <input type="text" id="carPlate" required>
+    </label>
+
+    <label>Bill Date:
+        <input type="date" id="billDate" required>
+    </label>
+
+    <div id="items">
+        <h3>Bill Items</h3>
+    </div>
+
+    <button type="button" onclick="addItem()">Add Bill Item</button>
+    <button type="submit">Submit Invoice</button>
+    <button type="button" onclick="window.location.href='search.html'">Search Invoices</button>
+</form>
+
+<script>
+    function addItem() {
+      const itemDiv = document.createElement("div");
+      itemDiv.className = "item";
+      itemDiv.innerHTML = `
+        <button type="button" class="remove-btn" onclick="this.parentElement.remove()">×</button>
+        <label>Description:
+          <input type="text" class="description" required>
+        </label>
+        <label>Quantity:
+          <input type="number" class="quantity" required>
+        </label>
+        <label>Price:
+          <input type="number" class="price" required>
+        </label>
+      `;
+      document.getElementById("items").appendChild(itemDiv);
+    }
+
+    document.getElementById("invoiceForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      const billItemRequestDTOS = Array.from(document.querySelectorAll(".item")).map(item => ({
+        description: item.querySelector(".description").value,
+        quantity: parseInt(item.querySelector(".quantity").value),
+        price: parseFloat(item.querySelector(".price").value)
+      }));
+
+      if (billItemRequestDTOS.length === 0) {
+        alert("Please add at least one bill item.");
+        return;
+      }
+
+      const totalCost = billItemRequestDTOS.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+      const invoiceData = {
+        customerName: document.getElementById("customerName").value,
+        customerPhoneNumber: document.getElementById("customerPhoneNumber").value,
+        carPlate: document.getElementById("carPlate").value,
+        billDate: document.getElementById("billDate").value,
+        totalCost,
+        billItemRequestDTOS
+      };
+
+      fetch('http://localhost:8080/api/bill/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(invoiceData)
+      })
+      .then(response => {
+        if (response.ok) {
+          alert("Invoice created successfully");
+          document.getElementById("invoiceForm").reset();
+          document.getElementById("items").innerHTML = "<h3>Bill Items</h3>";
+          addItem();
+        } else {
+          response.text().then(text => alert("Error: " + text));
+        }
+      });
+    });
+
+    addItem();
+</script>
+
+</body>
+</html>
